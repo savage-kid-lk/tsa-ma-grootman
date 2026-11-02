@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en-ZA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shop — Tsa Ma Grootman</title>
+  <meta name="description" content="Shop premium heavyweight tees by Tsa Ma Grootman. Logo and music collections, prices in ZAR, free nationwide delivery.">
+  <link rel="icon" href="assets/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800;900&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="shop">
+  <header id="site-header"></header>
+
+  <main>
+    <section class="page-banner">
+      <div class="container">
+        <div class="crumbs"><a href="index.html">Home</a> / Shop</div>
+        <h1>The Collection</h1>
+        <p>Heavyweight 300 GSM tees, built for the man who has come into his own. All prices in South African Rand, VAT included.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:48px">
+      <div class="container">
+        <div class="toolbar">
+          <div class="chips" role="group" aria-label="Filter by collection">
+            <button class="chip" data-filter="all">All tees</button>
+            <button class="chip" data-filter="logo">Logo</button>
+            <button class="chip" data-filter="music">Music</button>
+          </div>
+          <div style="display:flex;gap:16px;align-items:center">
+            <span class="muted small" id="result-count"></span>
+            <select class="select" id="sort" aria-label="Sort products">
+              <option value="featured">Featured</option>
+              <option value="low">Price: low to high</option>
+              <option value="high">Price: high to low</option>
+              <option value="az">Name: A–Z</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid" id="shop-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script src="assets/js/products.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script>
+    (() => {
+      const params = new URLSearchParams(location.search);
+      let filter = ['logo', 'music'].includes(params.get('c')) ? params.get('c') : 'all';
+      const grid = document.getElementById('shop-grid');
+      const sortEl = document.getElementById('sort');
+
+      function render() {
+        let list = PRODUCTS.filter((p) => filter === 'all' || p.collection === filter);
+        const s = sortEl.value;
+        if (s === 'low') list = [...list].sort((a, b) => a.price - b.price);
+        if (s === 'high') list = [...list].sort((a, b) => b.price - a.price);
+        if (s === 'az') list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+        grid.innerHTML = list.map(productCard).join('');
+        document.getElementById('result-count').textContent = `${list.length} tee${list.length === 1 ? '' : 's'}`;
+        document.querySelectorAll('[data-filter]').forEach((b) => {
+          const on = b.dataset.filter === filter;
+          b.classList.toggle('is-active', on); b.setAttribute('aria-pressed', on);
+        });
+      }
+      document.querySelectorAll('[data-filter]').forEach((b) => b.addEventListener('click', () => {
+        filter = b.dataset.filter;
+        history.replaceState(null, '', filter === 'all' ? 'shop.html' : `shop.html?c=${filter}`);
+        render();
+      }));
+      sortEl.addEventListener('change', render);
+      render();
+    })();
+  </script>
+</body>
+</html>

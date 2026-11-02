@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en-ZA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contact — Tsa Ma Grootman</title>
+  <meta name="description" content="Contact Tsa Ma Grootman — orders, delivery, sizing, returns and event enquiries.">
+  <link rel="icon" href="assets/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800;900&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-page="contact">
+  <header id="site-header"></header>
+
+  <main>
+    <section class="page-banner">
+      <div class="container">
+        <div class="crumbs"><a href="index.html">Home</a> / Contact</div>
+        <h1>Talk to us.</h1>
+        <p>Orders, sizing, events or collaborations — we'd love to hear from you.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container contact-grid">
+        <div>
+          <span class="eyebrow">Get in touch</span>
+          <h2 style="font-size:2rem;font-weight:900;text-transform:uppercase">We reply within one working day.</h2>
+          <ul class="info-list" id="contact-info"></ul>
+
+          <div class="faq">
+            <details id="orders" open>
+              <summary>Orders &amp; delivery</summary>
+              <p>Delivery is free on every order across South Africa. Orders are dispatched within 1–2 working days and typically arrive in 3–5 working days via courier. You'll receive tracking details by WhatsApp or email.</p>
+            </details>
+            <details id="sizing">
+              <summary>Size guide</summary>
+              <p>Our tees have a relaxed, structured fit. Measurements are chest width (armpit to armpit) and body length, in centimetres.</p>
+              <table class="sizes">
+                <thead><tr><th>Size</th><th>Chest</th><th>Length</th></tr></thead>
+                <tbody>
+                  <tr><td>S</td><td>51</td><td>70</td></tr>
+                  <tr><td>M</td><td>54</td><td>72</td></tr>
+                  <tr><td>L</td><td>57</td><td>74</td></tr>
+                  <tr><td>XL</td><td>60</td><td>76</td></tr>
+                  <tr><td>2XL</td><td>63</td><td>78</td></tr>
+                  <tr><td>3XL</td><td>66</td><td>80</td></tr>
+                </tbody>
+              </table>
+            </details>
+            <details id="returns">
+              <summary>Returns &amp; exchanges</summary>
+              <p>Unworn, unwashed items can be exchanged or returned within 14 days of delivery. Contact us with your order number and we'll arrange it. Sizing exchanges are on us.</p>
+            </details>
+            <details>
+              <summary>Payment options</summary>
+              <p>We accept card payments, Instant EFT and SnapScan. All prices are in South African Rand and include VAT.</p>
+            </details>
+          </div>
+        </div>
+
+        <form class="form-grid" id="contact-form" novalidate>
+          <div class="field"><label for="c-name">Name</label><input id="c-name" name="name" required autocomplete="name"></div>
+          <div class="field"><label for="c-phone">Phone</label><input id="c-phone" name="phone" type="tel" autocomplete="tel"></div>
+          <div class="field full"><label for="c-email">Email</label><input id="c-email" name="email" type="email" required autocomplete="email"></div>
+          <div class="field full">
+            <label for="c-topic">Topic</label>
+            <select id="c-topic" name="topic">
+              <option>Order enquiry</option><option>Sizing</option><option>Returns &amp; exchanges</option><option>Events &amp; bookings</option><option>Wholesale / collaboration</option><option>Other</option>
+            </select>
+          </div>
+          <div class="field full"><label for="c-msg">Message</label><textarea id="c-msg" name="message" required></textarea></div>
+          <div class="full"><button class="btn btn-dark" type="submit">Send message <span data-icon="arrow"></span></button></div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer id="site-footer"></footer>
+  <script src="assets/js/products.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script>
+    document.getElementById('contact-info').innerHTML = `
+      <li>${ICONS.wa}<a href="https://wa.me/${STORE.whatsapp}" target="_blank" rel="noopener">WhatsApp us</a></li>
+      <li>${ICONS.mail}<a href="mailto:${STORE.email}">${STORE.email}</a></li>
+      <li>${ICONS.ig}<a href="${STORE.instagram}" target="_blank" rel="noopener">Instagram</a></li>`;
+
+    // open the FAQ item linked by hash
+    const openHash = () => { const d = document.querySelector(location.hash); if (d && d.tagName === 'DETAILS') d.open = true; };
+    if (location.hash) try { openHash(); } catch {}
+    window.addEventListener('hashchange', () => { try { openHash(); } catch {} });
+
+    document.getElementById('contact-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const f = e.target;
+      if (!f.checkValidity()) { f.reportValidity(); return; }
+      const d = Object.fromEntries(new FormData(f));
+      const body = `Name: ${d.name}\nPhone: ${d.phone}\nEmail: ${d.email}\n\n${d.message}`;
+      location.href = `mailto:${STORE.email}?subject=${encodeURIComponent('[Website] ' + d.topic)}&body=${encodeURIComponent(body)}`;
+      toast('Opening your email app to send the message…');
+    });
+  </script>
+</body>
+</html>
