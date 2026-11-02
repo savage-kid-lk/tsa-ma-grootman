@@ -4,7 +4,7 @@
    Edit prices, names or colours here; every page updates.
    ========================================================= */
 
-const STORE = {
+export const STORE = {
   name: 'Tsa Ma Grootman',
   currency: 'ZAR',
   // TODO: replace with the client's real details
@@ -14,9 +14,9 @@ const STORE = {
   freeDeliveryNote: 'Free nationwide delivery on every order',
 };
 
-const SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
+export const SIZES = ['S', 'M', 'L', 'XL', '2XL', '3XL'];
 
-const PRODUCTS = [
+export const PRODUCTS = [
   {
     id: 'grootman-classic',
     name: 'The Grootman Classic',
@@ -25,7 +25,7 @@ const PRODUCTS = [
     badge: 'Essential',
     short: 'Clean chest-logo tee. The one you reach for every day.',
     description:
-      'Our signature crest, printed small on the left chest, with the woven neck label inside. Understated on purpose — a grootman doesn\'t need to shout. Heavyweight 300 GSM cotton that keeps its shape wash after wash.',
+      "Our signature crest, printed small on the left chest, with the woven neck label inside. Understated on purpose — a grootman doesn't need to shout. Heavyweight 300 GSM cotton that keeps its shape wash after wash.",
     colors: [
       { name: 'White', hex: '#f4f4f2', images: ['classic-white.jpg', 'classic-white-lifestyle.jpg'] },
       { name: 'Black', hex: '#111111', images: ['classic-black.jpg', 'featured-folded.jpg'] },
@@ -68,7 +68,7 @@ const PRODUCTS = [
     price: 795,
     short: 'Turntable print with the crest on the record label.',
     description:
-      'The Selector\'s smoother sibling. The Grootman crest spins on the centre label of the record — a detail for those who know. Printed on a warm bone-coloured heavyweight tee.',
+      "The Selector's smoother sibling. The Grootman crest spins on the centre label of the record — a detail for those who know. Printed on a warm bone-coloured heavyweight tee.",
     colors: [{ name: 'Bone', hex: '#e9e0cc', images: ['sidea-bone.jpg'] }],
   },
   {
@@ -79,7 +79,7 @@ const PRODUCTS = [
     badge: 'New',
     short: 'Green-label cassette. Rewind it with a pencil.',
     description:
-      'Before playlists, there were mixtapes. A full-colour cassette print with the Tsa Ma Grootman label — and yes, that\'s a pencil in the spool. Heavyweight 300 GSM black cotton.',
+      "Before playlists, there were mixtapes. A full-colour cassette print with the Tsa Ma Grootman label — and yes, that's a pencil in the spool. Heavyweight 300 GSM black cotton.",
     colors: [{ name: 'Black', hex: '#111111', images: ['mixtape-black.jpg', 'mixtape-black-wall.jpg'] }],
   },
   {
@@ -109,7 +109,15 @@ const PRODUCTS = [
   },
 ];
 
-const IMG = (f) => `assets/img/${f}`;
-const formatZAR = (n) =>
-  'R ' + Number(n).toLocaleString('en-ZA', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).replace(/,/g, ' ');
-const getProduct = (id) => PRODUCTS.find((p) => p.id === id);
+export const img = (file) => `/img/${file}`;
+
+export const formatZAR = (n) =>
+  'R ' + Math.round(Number(n)).toLocaleString('en-ZA').replace(/[,  ]/g, ' ');
+
+export const getProduct = (id) => PRODUCTS.find((p) => p.id === id);
+
+export function lineImage(line) {
+  const p = getProduct(line.id);
+  const c = p?.colors.find((c) => c.name === line.color) || p?.colors[0];
+  return c ? img(c.images[0]) : '';
+}

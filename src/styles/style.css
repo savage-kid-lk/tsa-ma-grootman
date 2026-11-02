@@ -358,3 +358,7 @@ table.sizes th { font-size: .72rem; letter-spacing: .15em; text-transform: upper
   .announce { font-size: .62rem; letter-spacing: .12em; }
   .summary { padding: 22px; }
 }
+
+/* ---------- React additions ---------- */
+.toast-link { text-decoration: underline; font-weight: 600; white-space: nowrap; color: var(--white); }
+[id] { scroll-margin-top: calc(var(--header-h) + 48px); }
