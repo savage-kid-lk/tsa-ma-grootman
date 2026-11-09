@@ -1,28 +1,26 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { PRODUCTS } from '../data/products.js';
+import { collectionLabel } from '../data/products.js';
+import { useCatalog } from '../context/CatalogContext.jsx';
 import { ProductGrid } from '../components/ProductCard.jsx';
 import usePageTitle from '../usePageTitle.js';
 
-const FILTERS = [
-  { key: 'all', label: 'All tees' },
-  { key: 'logo', label: 'Logo' },
-  { key: 'music', label: 'Music' },
-];
 
 export default function Shop() {
   usePageTitle('Shop');
+  const { products, collections } = useCatalog();
   const [params, setParams] = useSearchParams();
-  const filter = ['logo', 'music'].includes(params.get('c')) ? params.get('c') : 'all';
+  const FILTERS = [{ key: 'all', label: 'All tees' }, ...collections.map((c) => ({ key: c, label: collectionLabel(c) }))];
+  const filter = collections.includes(params.get('c')) ? params.get('c') : 'all';
   const [sort, setSort] = useState('featured');
 
   const list = useMemo(() => {
-    let l = PRODUCTS.filter((p) => filter === 'all' || p.collection === filter);
+    let l = products.filter((p) => filter === 'all' || p.collection === filter);
     if (sort === 'low') l = [...l].sort((a, b) => a.price - b.price);
     if (sort === 'high') l = [...l].sort((a, b) => b.price - a.price);
     if (sort === 'az') l = [...l].sort((a, b) => a.name.localeCompare(b.name));
     return l;
-  }, [filter, sort]);
+  }, [filter, sort, products]);
 
   const setFilter = (key) => setParams(key === 'all' ? {} : { c: key }, { replace: true });
 

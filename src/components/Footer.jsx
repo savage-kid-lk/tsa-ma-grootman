@@ -18,7 +18,6 @@ export default function Footer() {
         <div>
           <h4>Shop</h4>
           <Link to="/shop">All tees</Link>
-          <Link to="/shop?c=logo">Logo collection</Link>
           <Link to="/shop?c=music">Music collection</Link>
         </div>
         <div>
@@ -31,8 +30,6 @@ export default function Footer() {
         <div>
           <h4>The Brand</h4>
           <Link to="/about">Our story</Link>
-          <Link to="/about#sound">The soundscape</Link>
-          <Link to="/about#events">Events</Link>
         </div>
       </div>
       <div className="container footer-bottom">

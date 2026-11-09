@@ -3,15 +3,15 @@ import { STORE } from '../data/products.js';
 import { useStore } from '../context/StoreContext.jsx';
 import Icon from '../components/Icon.jsx';
 import usePageTitle from '../usePageTitle.js';
+import useSiteContent, { paragraphs } from '../useSiteContent.js';
 
-const SIZE_CHART = [
-  ['S', 51, 70], ['M', 54, 72], ['L', 57, 74], ['XL', 60, 76], ['2XL', 63, 78], ['3XL', 66, 80],
-];
-const TOPICS = ['Order enquiry', 'Sizing', 'Returns & exchanges', 'Events & bookings', 'Wholesale / collaboration', 'Other'];
+const TOPICS = ['Order enquiry', 'Sizing', 'Returns & exchanges', 'Wholesale / collaboration', 'Other'];
 
 export default function Contact() {
-  usePageTitle('Contact', 'Contact Tsa Ma Grootman — orders, delivery, sizing, returns and event enquiries.');
+  usePageTitle('Contact', 'Contact Tsa Ma Grootman — orders, delivery, sizing and returns.');
   const { showToast } = useStore();
+  const sizeGuide = useSiteContent('size_guide');
+  const returns = useSiteContent('returns');
 
   const submit = (e) => {
     e.preventDefault();
@@ -29,7 +29,7 @@ export default function Contact() {
         <div className="container">
           <div className="crumbs"><Link to="/">Home</Link> / Contact</div>
           <h1>Talk to us.</h1>
-          <p>Orders, sizing, events or collaborations — we'd love to hear from you.</p>
+          <p>Orders, sizing or collaborations — we'd love to hear from you.</p>
         </div>
       </section>
 
@@ -51,15 +51,17 @@ export default function Contact() {
               </details>
               <details id="sizing">
                 <summary>Size guide</summary>
-                <p>Our tees have a relaxed, structured fit. Measurements are chest width (armpit to armpit) and body length, in centimetres.</p>
-                <table className="sizes">
-                  <thead><tr><th>Size</th><th>Chest</th><th>Length</th></tr></thead>
-                  <tbody>{SIZE_CHART.map(([s, c, l]) => <tr key={s}><td>{s}</td><td>{c}</td><td>{l}</td></tr>)}</tbody>
-                </table>
+                {paragraphs(sizeGuide.intro).map((t) => <p key={t}>{t}</p>)}
+                {sizeGuide.rows?.length > 0 && (
+                  <table className="sizes">
+                    <thead><tr><th>Size</th><th>Chest</th><th>Length</th></tr></thead>
+                    <tbody>{sizeGuide.rows.map((r, i) => <tr key={`${r.size}-${i}`}><td>{r.size}</td><td>{r.chest}</td><td>{r.length}</td></tr>)}</tbody>
+                  </table>
+                )}
               </details>
               <details id="returns">
                 <summary>Returns &amp; exchanges</summary>
-                <p>Unworn, unwashed items can be exchanged or returned within 14 days of delivery. Contact us with your order number and we'll arrange it. Sizing exchanges are on us.</p>
+                {paragraphs(returns.body).map((t) => <p key={t}>{t}</p>)}
               </details>
               <details>
                 <summary>Payment options</summary>

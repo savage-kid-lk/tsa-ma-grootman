@@ -1,15 +1,7 @@
 import { Link } from 'react-router-dom';
 import Icon from '../components/Icon.jsx';
 import Reveal from '../components/Reveal.jsx';
-import { Values } from './Home.jsx';
 import usePageTitle from '../usePageTitle.js';
-
-const SOUND = [
-  { icon: 'music', title: 'Deep House', sub: 'Sunday sessions' },
-  { icon: 'music', title: 'Old School R&B', sub: 'Slow jams' },
-  { icon: 'music', title: 'Hip Hop', sub: 'Golden era' },
-  { icon: 'music', title: 'Kwaito', sub: 'Born in the township' },
-];
 
 export default function About() {
   usePageTitle('About', 'Tsa Ma Grootman is a South African premium fashion brand rooted in township culture, music and the modern grootman mindset.');
@@ -38,28 +30,7 @@ export default function About() {
         </div>
       </section>
 
-      <section className="brand-band" id="sound">
-        <div className="container">
-          <h2>The Soundscape</h2>
-          <hr className="rule" />
-          <p>Music plays a central role in shaping who we are. These are the genres that resonate with our people and their lived experiences.</p>
-          <Values items={SOUND} />
-        </div>
-      </section>
 
-      <section className="section" id="events">
-        <div className="container split">
-          <Reveal className="split-img"><img src="/img/lookbook-fresh.jpg" alt="Selector tee with records and headphones" loading="lazy" /></Reveal>
-          <Reveal>
-            <span className="eyebrow">Events</span>
-            <h2>Where the brand comes alive.</h2>
-            <hr className="rule" />
-            <p>We bring the community together through curated events featuring DJs and live performances. They're more than promotions — they're cultural touchpoints where good music meets good company.</p>
-            <p className="muted">Join the Grootman Circle to get first word on upcoming events.</p>
-            <Link to="/#newsletter" className="btn btn-outline" style={{ marginTop: 12 }}>Get event invites <Icon name="arrow" /></Link>
-          </Reveal>
-        </div>
-      </section>
 
       <section className="section newsletter">
         <div className="container">

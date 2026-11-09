@@ -1,17 +1,14 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { STORE, formatZAR, getProduct, lineImage } from '../data/products.js';
+import { Link, Navigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase.js';
+import { PROVINCES, colorImage, formatZAR } from '../data/products.js';
 import { useStore } from '../context/StoreContext.jsx';
+import { useCatalog } from '../context/CatalogContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import usePageTitle from '../usePageTitle.js';
 
-const PROVINCES = ['Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal', 'Limpopo', 'Mpumalanga', 'North West', 'Northern Cape', 'Western Cape'];
-const PAYMENTS = [
-  { value: 'Card', title: 'Card', note: 'Visa, Mastercard — secure payment link sent to you' },
-  { value: 'Instant EFT', title: 'Instant EFT', note: 'Pay directly from your bank' },
-  { value: 'SnapScan', title: 'SnapScan', note: 'Scan to pay with your phone' },
-];
-
 function Summary({ items, total }) {
+  const { getProduct } = useCatalog();
   return (
     <aside className="summary">
       <h3>Order summary</h3>
@@ -20,7 +17,7 @@ function Summary({ items, total }) {
         if (!p) return null;
         return (
           <div className="sum-line" key={`${l.id}-${l.color}-${l.size}`}>
-            <img src={lineImage(l)} alt="" />
+            <img src={colorImage(p, l.color)} alt="" />
             <div>
               <strong style={{ textTransform: 'uppercase', fontSize: '.88rem' }}>{p.name}</strong><br />
               <span className="muted small">{l.color} · {l.size} · Qty {l.qty}</span>
@@ -31,40 +28,41 @@ function Summary({ items, total }) {
       })}
       <div className="row" style={{ marginTop: 12 }}><span>Subtotal</span><span>{formatZAR(total)}</span></div>
       <div className="row"><span>Delivery</span><span>Free</span></div>
-      <div className="row muted small"><span>Includes VAT (15%)</span><span>{formatZAR(total - total / 1.15)}</span></div>
+      <div className="row muted small"><span>Includes VAT (15%)</span><span>{formatZAR(Math.round((total - total / 1.15) * 100) / 100)}</span></div>
       <div className="row total"><span>Total</span><span>{formatZAR(total)}</span></div>
     </aside>
   );
 }
 
-function Success({ order }) {
-  return (
-    <div className="success">
-      <span className="eyebrow">Order {order.number}</span>
-      <h1>Sharp move, grootman.</h1>
-      <hr className="rule center" />
-      <p>
-        Thanks, {order.firstName}. Send your order to us below and we'll reply with your {order.payment} payment
-        details. Delivery is free and takes 3–5 working days.
-      </p>
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginTop: 28 }}>
-        <a className="btn btn-dark" target="_blank" rel="noopener noreferrer" href={`https://wa.me/${STORE.whatsapp}?text=${encodeURIComponent(order.message)}`}>
-          Send via WhatsApp
-        </a>
-        <a className="btn btn-outline" href={`mailto:${STORE.email}?subject=${encodeURIComponent('Order ' + order.number)}&body=${encodeURIComponent(order.message)}`}>
-          Send via email
-        </a>
-      </div>
-    </div>
-  );
+/** Post the signed fields to PayFast — a real form submit, so the browser leaves for PayFast's page. */
+function redirectToPayFast(action, fields) {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = action;
+  Object.entries(fields).forEach(([k, v]) => {
+    const input = document.createElement('input');
+    input.type = 'hidden'; input.name = k; input.value = v;
+    form.appendChild(input);
+  });
+  document.body.appendChild(form);
+  form.submit();
+}
+
+async function errorMessage(error) {
+  try { const body = await error.context.json(); if (body?.error) return body.error; } catch { /* not JSON */ }
+  return error.message || 'Could not start payment. Please try again.';
 }
 
 export default function Checkout() {
   usePageTitle('Checkout');
-  const { items, total, clearCart } = useStore();
-  const [order, setOrder] = useState(null);
+  const { items, total } = useStore();
+  const { loading } = useCatalog();
+  const { ready, user, profile } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
-  if (order) return <div className="container"><Success order={order} /></div>;
+  if (!ready || loading) return <div className="container notfound"><span className="spinner" aria-label="Loading" /></div>;
+  if (!user) return <Navigate to="/login?next=/checkout" replace />;
 
   if (!items.length) {
     return (
@@ -76,21 +74,17 @@ export default function Checkout() {
     );
   }
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     const f = e.currentTarget;
     if (!f.checkValidity()) { f.reportValidity(); return; }
-    const d = Object.fromEntries(new FormData(f));
-    const number = 'TMG-' + Date.now().toString(36).toUpperCase().slice(-6);
-    const lines = items
-      .map((l) => { const p = getProduct(l.id); return `• ${l.qty} × ${p.name} (${l.color}, ${l.size}) — ${formatZAR(p.price * l.qty)}`; })
-      .join('\n');
-    const message =
-      `New order ${number}\n\n${lines}\n\nTotal: ${formatZAR(total)} (free delivery)\nPayment: ${d.payment}\n\n` +
-      `${d.name}\n${d.phone} · ${d.email}\n${d.address}, ${d.suburb}, ${d.city}, ${d.province}, ${d.postal}`;
-    setOrder({ number, message, payment: d.payment, firstName: d.name.trim().split(/\s+/)[0] });
-    clearCart();
-    window.scrollTo({ top: 0 });
+    const customer = Object.fromEntries(new FormData(f));
+    setBusy(true); setError('');
+    const { data, error: err } = await supabase.functions.invoke('create-payment', {
+      body: { items: items.map((l) => ({ productId: l.id, color: l.color, size: l.size, qty: l.qty })), customer },
+    });
+    if (err) { setError(await errorMessage(err)); setBusy(false); return; }
+    redirectToPayFast(data.action, data.fields);
   };
 
   return (
@@ -102,9 +96,9 @@ export default function Checkout() {
 
           <span className="eyebrow">Contact</span>
           <div className="form-grid" style={{ marginBottom: 36 }}>
-            <div className="field"><label htmlFor="f-name">Full name</label><input id="f-name" name="name" required autoComplete="name" /></div>
-            <div className="field"><label htmlFor="f-phone">Cell number</label><input id="f-phone" name="phone" type="tel" required autoComplete="tel" placeholder="e.g. 082 123 4567" /></div>
-            <div className="field full"><label htmlFor="f-email">Email</label><input id="f-email" name="email" type="email" required autoComplete="email" /></div>
+            <div className="field"><label htmlFor="f-name">Full name</label><input id="f-name" name="name" required autoComplete="name" defaultValue={profile?.full_name || ''} /></div>
+            <div className="field"><label htmlFor="f-phone">Cell number</label><input id="f-phone" name="phone" type="tel" required autoComplete="tel" placeholder="e.g. 082 123 4567" defaultValue={profile?.phone || ''} /></div>
+            <div className="field full"><label htmlFor="f-email">Email</label><input id="f-email" name="email" type="email" required autoComplete="email" defaultValue={user.email} /></div>
           </div>
 
           <span className="eyebrow">Delivery address</span>
@@ -124,16 +118,17 @@ export default function Checkout() {
 
           <span className="eyebrow">Payment</span>
           <div className="pay-opts" style={{ marginBottom: 32 }}>
-            {PAYMENTS.map((p, i) => (
-              <label key={p.value}>
-                <input type="radio" name="payment" value={p.value} defaultChecked={i === 0} />
-                <span><strong>{p.title}</strong><small>{p.note}</small></span>
-              </label>
-            ))}
+            <label>
+              <input type="radio" name="gateway" value="payfast" defaultChecked />
+              <span><strong>PayFast</strong><small>Card, Instant EFT, SnapScan, Zapper and more — you'll pay on PayFast's secure page</small></span>
+            </label>
           </div>
 
-          <button className="btn btn-dark btn-block" type="submit">Place order · {formatZAR(total)}</button>
-          <p className="muted small" style={{ marginTop: 14 }}>We'll confirm your order and send your secure payment link via WhatsApp and email.</p>
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <button className="btn btn-dark btn-block" type="submit" disabled={busy}>
+            {busy ? 'Connecting to PayFast…' : `Pay ${formatZAR(total)} with PayFast`}
+          </button>
+          <p className="muted small" style={{ marginTop: 14 }}>Test mode: this store uses the PayFast sandbox, so no real money is charged.</p>
         </form>
         <Summary items={items} total={total} />
       </div>

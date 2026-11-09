@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { PRODUCTS, SIZES, formatZAR, getProduct, img } from '../data/products.js';
+import { collectionLabel, formatZAR, maxAddable, stockStatus } from '../data/products.js';
 import { useStore } from '../context/StoreContext.jsx';
+import { useCatalog } from '../context/CatalogContext.jsx';
 import Icon from '../components/Icon.jsx';
 import { ProductGrid } from '../components/ProductCard.jsx';
 import usePageTitle from '../usePageTitle.js';
 
 function Related({ product }) {
-  const list = PRODUCTS.filter((x) => x.id !== product?.id)
+  const { products } = useCatalog();
+  const list = products.filter((x) => x.id !== product?.id)
     .sort((a, b) => (b.collection === product?.collection) - (a.collection === product?.collection))
     .slice(0, 4);
   return (
@@ -20,18 +22,98 @@ function Related({ product }) {
   );
 }
 
+/** Main image with prev/next, swipe, keyboard arrows, thumbnails and a full-screen zoom. */
+function Gallery({ images, name }) {
+  const [idx, setIdx] = useState(0);
+  const [zoom, setZoom] = useState(false);
+  const touch = useRef(null);
+  const n = images.length;
+  const go = (d) => setIdx((i) => (i + d + n) % n);
+
+  useEffect(() => { setIdx(0); }, [images]);
+  useEffect(() => {
+    if (!zoom) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setZoom(false);
+      if (e.key === 'ArrowRight') go(1);
+      if (e.key === 'ArrowLeft') go(-1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  if (!n) return <div className="gallery-main" />;
+  const cur = images[Math.min(idx, n - 1)];
+
+  const swipe = {
+    onTouchStart: (e) => { touch.current = e.touches[0].clientX; },
+    onTouchEnd: (e) => {
+      if (touch.current == null) return;
+      const dx = e.changedTouches[0].clientX - touch.current;
+      if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+      touch.current = null;
+    },
+  };
+
+  return (
+    <div className="gallery">
+      <div className="gallery-main" {...swipe}>
+        <button type="button" className="gallery-zoom" onClick={() => setZoom(true)} aria-label="View full size">
+          <img src={cur.url} alt={cur.alt || name} />
+        </button>
+        {n > 1 && (
+          <>
+            <button type="button" className="gallery-nav prev" onClick={() => go(-1)} aria-label="Previous image"><Icon name="chevron" /></button>
+            <button type="button" className="gallery-nav next" onClick={() => go(1)} aria-label="Next image"><Icon name="chevron" /></button>
+            <span className="gallery-count">{idx + 1} / {n}</span>
+          </>
+        )}
+      </div>
+      {n > 1 && (
+        <div className="thumbs">
+          {images.map((im, i) => (
+            <button key={`${im.url}-${i}`} type="button" className={i === idx ? 'is-active' : ''} onClick={() => setIdx(i)} aria-label={`View image ${i + 1}`}>
+              <img src={im.url} alt="" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
+      {zoom && (
+        <div className="lightbox" role="dialog" aria-label={`${name} images`} onClick={() => setZoom(false)} {...swipe}>
+          <img src={cur.url} alt={cur.alt || name} onClick={(e) => e.stopPropagation()} />
+          <button type="button" className="lightbox-close" aria-label="Close"><Icon name="close" /></button>
+          {n > 1 && (
+            <>
+              <button type="button" className="gallery-nav prev" onClick={(e) => { e.stopPropagation(); go(-1); }} aria-label="Previous image"><Icon name="chevron" /></button>
+              <button type="button" className="gallery-nav next" onClick={(e) => { e.stopPropagation(); go(1); }} aria-label="Next image"><Icon name="chevron" /></button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProductDetail({ product: p }) {
-  const { addItem, showToast } = useStore();
+  const { addItem, showToast, items } = useStore();
   const [colorIdx, setColorIdx] = useState(0);
-  const [imgIdx, setImgIdx] = useState(0);
   const [size, setSize] = useState(null);
   const [qty, setQty] = useState(1);
   const [sizeError, setSizeError] = useState(false);
   const color = p.colors[colorIdx];
+  const images = color?.images.length ? color.images : p.images;
+  const status = stockStatus(p);
+  const inCart = items.reduce((s, l) => (l.id === p.id ? s + l.qty : s), 0);
+  const canAdd = maxAddable(p, inCart);
+  const soldOut = status === 'out';
+
+  useEffect(() => { setQty((q) => Math.max(1, Math.min(q, canAdd || 1))); }, [canAdd]);
 
   const add = () => {
+    if (!color || canAdd < 1) return;
     if (!size) { setSizeError(true); return; }
-    addItem(p.id, color.name, size, qty);
+    const n = Math.min(qty, canAdd);
+    addItem(p.id, color.name, size, n);
     showToast(`Added ${p.name} (${color.name}, ${size})`, 'cart');
   };
 
@@ -41,43 +123,37 @@ function ProductDetail({ product: p }) {
         <Link to="/">Home</Link> / <Link to="/shop">Shop</Link> / {p.name}
       </div>
       <div className="pdp">
-        <div>
-          <div className="gallery-main"><img src={img(color.images[imgIdx])} alt={`${p.name} in ${color.name}`} /></div>
-          {color.images.length > 1 && (
-            <div className="thumbs">
-              {color.images.map((f, i) => (
-                <button key={f} type="button" className={i === imgIdx ? 'is-active' : ''} onClick={() => setImgIdx(i)} aria-label={`View image ${i + 1}`}>
-                  <img src={img(f)} alt="" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <Gallery images={images} name={p.name} />
 
         <div className="pdp-info">
-          <span className="eyebrow">{p.collection === 'music' ? 'Music Collection' : 'Logo Collection'}</span>
+          <span className="eyebrow">{collectionLabel(p.collection)} Collection</span>
           <h1>{p.name}</h1>
           <div className="pdp-price">{formatZAR(p.price)}</div>
           <span className="muted small">VAT included · Free delivery nationwide</span>
+          {status === 'out' && <div className="stock-note out">Sold out — check back soon</div>}
+          {status === 'low' && <div className="stock-note low">Only {p.stock} left in stock</div>}
+          {status === 'in' && <div className="stock-note in">In stock</div>}
           <p className="pdp-desc">{p.description}</p>
 
-          <div className="opt-group">
-            <div className="opt-label"><span>Colour: <span style={{ fontWeight: 400 }}>{color.name}</span></span></div>
-            <div className="color-opts">
-              {p.colors.map((c, i) => (
-                <button
-                  key={c.name} type="button" style={{ '--c': c.hex }} title={c.name} aria-label={c.name}
-                  aria-pressed={i === colorIdx} className={i === colorIdx ? 'is-active' : ''}
-                  onClick={() => { setColorIdx(i); setImgIdx(0); }}
-                />
-              ))}
+          {p.colors.length > 0 && (
+            <div className="opt-group">
+              <div className="opt-label"><span>Colour: <span style={{ fontWeight: 400 }}>{color.name}</span></span></div>
+              <div className="color-opts">
+                {p.colors.map((c, i) => (
+                  <button
+                    key={c.id} type="button" style={{ '--c': c.hex }} title={c.name} aria-label={c.name}
+                    aria-pressed={i === colorIdx} className={i === colorIdx ? 'is-active' : ''}
+                    onClick={() => setColorIdx(i)}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="opt-group">
             <div className="opt-label"><span>Size</span><Link to="/contact#sizing">Size guide</Link></div>
             <div className="size-opts">
-              {SIZES.map((s) => (
+              {p.sizes.map((s) => (
                 <button key={s} type="button" aria-pressed={s === size} className={s === size ? 'is-active' : ''} onClick={() => { setSize(s); setSizeError(false); }}>
                   {s}
                 </button>
@@ -90,15 +166,18 @@ function ProductDetail({ product: p }) {
             <div className="qty-box">
               <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Decrease quantity">−</button>
               <span>{qty}</span>
-              <button type="button" onClick={() => setQty((q) => Math.min(20, q + 1))} aria-label="Increase quantity">+</button>
+              <button type="button" onClick={() => setQty((q) => Math.min(canAdd || 1, q + 1))} disabled={qty >= canAdd} aria-label="Increase quantity">+</button>
             </div>
-            <button className="btn btn-dark" onClick={add}>Add to cart <Icon name="arrow" /></button>
+            <button className="btn btn-dark" onClick={add} disabled={!color || canAdd < 1}>
+              {soldOut ? 'Sold out' : canAdd < 1 ? 'All in your cart' : <>Add to cart <Icon name="arrow" /></>}
+            </button>
           </div>
+          {!soldOut && canAdd < 1 && <p className="muted small" style={{ marginTop: 10 }}>You have all {p.stock} available in your cart.</p>}
 
           <ul className="perks">
             <li><i><Icon name="crown" /></i> Heavyweight 300 GSM cotton, relaxed fit</li>
             <li><i><Icon name="truck" /></i> Free delivery across South Africa · 3–5 working days</li>
-            <li><i><Icon name="card" /></i> Secure payment · Card, Instant EFT or SnapScan</li>
+            <li><i><Icon name="card" /></i> Secure payment with PayFast · Card, Instant EFT and more</li>
           </ul>
         </div>
       </div>
@@ -108,8 +187,11 @@ function ProductDetail({ product: p }) {
 
 export default function Product() {
   const { id } = useParams();
+  const { getProduct, loading } = useCatalog();
   const p = getProduct(id);
-  usePageTitle(p ? p.name : 'Tee not found', p ? `${p.name}: ${p.short} ${formatZAR(p.price)}, free nationwide delivery.` : undefined);
+  usePageTitle(p ? p.name : loading ? null : 'Tee not found', p ? `${p.name}: ${p.short} ${formatZAR(p.price)}, free nationwide delivery.` : undefined);
+
+  if (loading) return <div className="container notfound"><span className="spinner" aria-label="Loading" /></div>;
 
   return (
     <>

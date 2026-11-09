@@ -6,7 +6,7 @@ import Footer from './Footer.jsx';
 import CartDrawer from './CartDrawer.jsx';
 import SearchPanel from './SearchPanel.jsx';
 
-function Toast() {
+export function Toast() {
   const { toast, openPanel } = useStore();
   return (
     <div className={`toast ${toast ? 'show' : ''}`} role="status">
@@ -21,7 +21,7 @@ function Toast() {
 }
 
 /** Scroll to top on page change, or to the #hash target when one is given. */
-function ScrollManager() {
+export function ScrollManager() {
   const { pathname, search, hash } = useLocation();
   const { closePanel } = useStore();
 

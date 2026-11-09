@@ -12,7 +12,6 @@ const VALUES = [
   { icon: 'card', title: 'Secure Payments', sub: 'Safe & Trusted' },
   { icon: 'music', title: 'Music Inspired', sub: 'For the Culture' },
 ];
-const GENRES = ['Deep House', 'Old School R&B', 'Hip Hop', 'Kwaito'];
 
 export function Values({ items = VALUES }) {
   return (
@@ -35,8 +34,8 @@ export function Newsletter() {
     <section className="section newsletter" id="newsletter">
       <div className="container">
         <span className="eyebrow">Join the Grootman Circle</span>
-        <h2>First access. Event invites.</h2>
-        <p>New drops, curated DJ events and live sessions — straight to your inbox.</p>
+        <h2>First access. New drops.</h2>
+        <p>New drops and members-only offers — straight to your inbox.</p>
         <form
           className="inline-form"
           onSubmit={(e) => { e.preventDefault(); setEmail(''); showToast('Welcome to the Grootman Circle.'); }}
@@ -74,7 +73,7 @@ export default function Home() {
             <h2>Classics<br />never fade.</h2>
             <hr className="rule" />
             <p>Premium heavyweight tees inspired by music, culture and the life of a true Grootman.</p>
-            <Link to="/shop?c=logo" className="btn btn-dark">View collection <Icon name="arrow" /></Link>
+            <Link to="/shop" className="btn btn-dark">View collection <Icon name="arrow" /></Link>
           </Reveal>
           <Reveal className="featured-img">
             <img src="/img/featured-folded.jpg" alt="Folded white and black Grootman Classic tees" loading="lazy" />
@@ -99,18 +98,10 @@ export default function Home() {
             <div><span className="eyebrow">The Line-up</span><h2>Shop the tees</h2></div>
             <Link to="/shop" className="text-link">View all <Icon name="arrow" /></Link>
           </div>
-          <Reveal><ProductGrid ids={['the-statement', 'the-selector', 'grootman-classic', 'crate-digger']} /></Reveal>
+          <Reveal><ProductGrid filter={(p) => p.featured} limit={4} /></Reveal>
         </div>
       </section>
 
-      {/* SOUNDSCAPE */}
-      <section className="sound" aria-label="Our soundscape: Deep House, Old School R&B, Hip Hop, Kwaito">
-        <div className="marquee" aria-hidden="true">
-          {[0, 1, 2, 3].flatMap((r) =>
-            GENRES.map((g, i) => <span key={`${r}-${g}`} className={i % 2 ? 'outline' : ''}>{g}</span>),
-          )}
-        </div>
-      </section>
 
       {/* MUSIC COLLECTION */}
       <section className="section">
@@ -131,7 +122,7 @@ export default function Home() {
 
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container">
-          <Reveal><ProductGrid className="grid cols-3" ids={['the-mixtape', 'side-a', 'retro-tape']} /></Reveal>
+          <Reveal><ProductGrid className="grid cols-3" filter={(p) => p.collection === 'music' && !p.featured} limit={3} /></Reveal>
         </div>
       </section>
 

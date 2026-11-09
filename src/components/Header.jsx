@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { STORE } from '../data/products.js';
 import { useStore } from '../context/StoreContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import Icon from './Icon.jsx';
 
 const NAV = [
@@ -13,6 +14,7 @@ const NAV = [
 
 export default function Header() {
   const { count, panel, openPanel, closePanel } = useStore();
+  const { user, isAdmin } = useAuth();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -47,11 +49,15 @@ export default function Header() {
               {n.label}
             </NavLink>
           ))}
+          {isAdmin && <NavLink to="/admin" onClick={closePanel}>Dashboard</NavLink>}
+          <NavLink to={user ? '/account' : '/login'} className={({ isActive }) => `show-sm ${isActive ? 'is-active' : ''}`} onClick={closePanel}>
+            {user ? 'My account' : 'Sign in'}
+          </NavLink>
         </nav>
 
         <div className="header-actions">
           <button className="icon-btn" aria-label="Search" onClick={() => openPanel('search')}><Icon name="search" /></button>
-          <Link className="icon-btn hide-sm" to="/contact#orders" aria-label="Order help"><Icon name="user" /></Link>
+          <Link className="icon-btn hide-sm" to={user ? '/account' : '/login'} aria-label={user ? 'My account' : 'Sign in'} title={user ? 'My account' : 'Sign in'}><Icon name="user" /></Link>
           <button className="icon-btn cart-btn" aria-label={`Open cart, ${count} items`} onClick={() => openPanel('cart')}>
             <Icon name="cart" />
             <span className="cart-count" aria-live="polite">{count}</span>

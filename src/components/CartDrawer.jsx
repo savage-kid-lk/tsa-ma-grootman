@@ -1,10 +1,14 @@
 import { Link } from 'react-router-dom';
-import { formatZAR, getProduct, lineImage } from '../data/products.js';
+import { colorImage, formatZAR } from '../data/products.js';
+
+const totalFor = (items, id) => items.reduce((s, l) => (l.id === id ? s + l.qty : s), 0);
+import { useCatalog } from '../context/CatalogContext.jsx';
 import { useStore } from '../context/StoreContext.jsx';
 import Icon from './Icon.jsx';
 
 export default function CartDrawer() {
   const { items, total, setQty, panel, closePanel } = useStore();
+  const { getProduct } = useCatalog();
   const open = panel === 'cart';
 
   return (
@@ -26,14 +30,15 @@ export default function CartDrawer() {
             if (!p) return null;
             return (
               <div className="line" key={`${l.id}-${l.color}-${l.size}`}>
-                <Link to={`/product/${p.id}`} className="line-img" onClick={closePanel}><img src={lineImage(l)} alt={p.name} /></Link>
+                <Link to={`/product/${p.id}`} className="line-img" onClick={closePanel}><img src={colorImage(p, l.color)} alt={p.name} /></Link>
                 <div className="line-info">
                   <Link to={`/product/${p.id}`} className="line-name" onClick={closePanel}>{p.name}</Link>
                   <span className="muted small">{l.color} · Size {l.size}</span>
+                  {!p.unlimitedStock && p.stock <= p.lowStockThreshold && <span className="stock-mini">Only {p.stock} left</span>}
                   <div className="qty">
                     <button onClick={() => setQty(i, l.qty - 1)} aria-label="Decrease quantity">−</button>
                     <span>{l.qty}</span>
-                    <button onClick={() => setQty(i, l.qty + 1)} aria-label="Increase quantity">+</button>
+                    <button onClick={() => setQty(i, l.qty + 1)} aria-label="Increase quantity" disabled={l.qty >= 20 || (!p.unlimitedStock && totalFor(items, p.id) >= p.stock)}>+</button>
                   </div>
                 </div>
                 <div className="line-price">
